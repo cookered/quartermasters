@@ -2,23 +2,25 @@
 <html>
     <head>
         <title>My Flask App</title>
+        <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     </head>
     <body>
-        <h1>It works</h1>
-        <video id="webcam" width="640" height="480" autoplay playsinline></video>
+        <h1>QR Code Scanner</h1>
+        <div id="qr-reader" style="width: 500px;"></div>
         <script>
-            const video = document.getElementById('webcam');
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) {
-                        video.srcObject = stream;
-                    })
-                    .catch(function(error) {
-                        video.outerHTML = '<p>Could not access webcam: ' + error + '</p>';
-                    });
-            } else {
-                video.outerHTML = '<p>getUserMedia not supported in this browser.</p>';
+            let qrResult = null;
+            function onScanSuccess(decodedText, decodedResult) {
+                qrResult = decodedText;
+                // You can use qrResult variable elsewhere in your script
+                // For debugging, you can log it:
+                console.log('QR Code:', qrResult);
             }
+            function onScanFailure(error) {
+                // Optionally handle scan failure
+            }
+            let html5QrcodeScanner = new Html5QrcodeScanner(
+                "qr-reader", { fps: 10, qrbox: 250 });
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
         </script>
     </body>
 </html>
