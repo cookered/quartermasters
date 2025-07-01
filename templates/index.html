@@ -1,26 +1,87 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>My Flask App</title>
-        <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    </head>
-    <body>
-        <h1>QR Code Scanner</h1>
-        <div id="qr-reader" style="width: 500px;"></div>
-        <script>
-            let qrResult = null;
-            function onScanSuccess(decodedText, decodedResult) {
-                qrResult = decodedText;
-                // You can use qrResult variable elsewhere in your script
-                // For debugging, you can log it:
-                console.log('QR Code:', qrResult);
-            }
-            function onScanFailure(error) {
-                // Optionally handle scan failure
-            }
-            let html5QrcodeScanner = new Html5QrcodeScanner(
-                "qr-reader", { fps: 10, qrbox: 250 });
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        </script>
-    </body>
+<head>
+  <title>Google Sheet DB Dashboard</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    input, button { margin: 0.2rem; padding: 0.5rem; }
+    table { border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background-color: #f0f0f0; }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <h2>📋 Sheet Dashboard</h2>
+
+  <div>
+    <input id="id" placeholder="ID">
+    <input id="name" placeholder="Name">
+    <input id="age" placeholder="Age">
+    <button onclick="create()">Create</button>
+    <button onclick="update()">Update</button>
+    <button onclick="deleteRec()">Delete</button>
+  </div>
+
+  <button onclick="read()">🔄 Refresh Table</button>
+  <table id="data"></table>
+
+  <script>
+    const URL = "https://script.google.com/macros/s/AKfycbwt6K6yAavYbp167iVF3NmrTjy9OGro70r31JVpSQ0AXGHwER1_-jwRJ-b8HvjlMeIv/exec";
+    const TABLE = "MyTable";
+
+    function create() {
+      const obj = {
+        id: $("#id").val(),
+        name: $("#name").val(),
+        age: $("#age").val()
+      };
+      $.ajax({
+        url: `${URL}?action=create&table=${TABLE}`,
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(obj),
+        success: () => read()
+      });
+    }
+
+    function update() {
+      const obj = {
+        id: $("#id").val(),
+        column: "age",  // Change this if needed
+        value: $("#age").val()
+      };
+      $.ajax({
+        url: `${URL}?action=update&table=${TABLE}`,
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(obj),
+        success: () => read()
+      });
+    }
+
+    function deleteRec() {
+      const obj = { id: $("#id").val() };
+      $.ajax({
+        url: `${URL}?action=delete&table=${TABLE}`,
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(obj),
+        success: () => read()
+      });
+    }
+
+    function read() {
+      $.get(`${URL}?action=read&table=${TABLE}`, function (data) {
+        let html = "<tr><th>ID</th><th>Name</th><th>Age</th></tr>";
+        data.forEach(row => {
+          html += `<tr><td>${row.id}</td><td>${row.name}</td><td>${row.age}</td></tr>`;
+        });
+        $("#data").html(html);
+      });
+    }
+
+    $(document).ready(read);
+  </script>
+</body>
 </html>
