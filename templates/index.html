@@ -1,111 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Things Dashboard</title>
-  <style>
-    body { font-family: sans-serif; padding: 2rem; }
-    input, button { margin: 0.2rem; padding: 0.5rem; }
-    table { border-collapse: collapse; margin-top: 1rem; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    #data { margin-top: 1rem; }
-  </style>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <title>Troop 89 Quartermasters Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-  <h2>📦 Things Database Dashboard</h2>
-
-  <div>
-    <input id="id" placeholder="id">
-    <input id="name" placeholder="name">
-    <input id="out" placeholder="out">
-    <input id="who" placeholder="who">
-    <input id="time" placeholder="time">
-    <br>
-    <input id="column" placeholder="Column to update (e.g. out)">
-    <input id="value" placeholder="New value">
-    <br>
-    <button onclick="create()">Create</button>
-    <button onclick="update()">Update</button>
-    <button onclick="deleteRec()">Delete</button>
-    <button onclick="read()">🔄 Refresh Table</button>
-  </div>
-
-  <table id="data"></table>
-
+  <div id="g_id_onload"
+       data-client_id="{{ GOOGLE_CLIENT_ID }}"
+       data-callback="onGoogleLogin"
+       data-auto_prompt="false"></div>
+  <div class="g_id_signin" data-type="standard"></div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
   <script>
-    const URL = "YOUR_WEB_APP_URL_HERE";  // Replace this with your deployed Apps Script URL
-    const TABLE = "things";
-
-    function create() {
-      const obj = {
-        id: $("#id").val(),
-        name: $("#name").val(),
-        out: $("#out").val(),
-        who: $("#who").val(),
-        time: $("#time").val()
-      };
-      $.ajax({
-        url: `${URL}?action=create&table=${TABLE}`,
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(obj),
-        success: () => {
-          read();
-          alert("Record created!");
-        }
-      });
-    }
-
-    function update() {
-      const obj = {
-        id: $("#id").val(),
-        column: $("#column").val(),
-        value: $("#value").val()
-      };
-      $.ajax({
-        url: `${URL}?action=update&table=${TABLE}`,
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(obj),
-        success: () => {
-          read();
-          alert("Record updated!");
-        }
-      });
-    }
-
-    function deleteRec() {
-      const obj = { id: $("#id").val() };
-      $.ajax({
-        url: `${URL}?action=delete&table=${TABLE}`,
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(obj),
-        success: () => {
-          read();
-          alert("Record deleted!");
-        }
-      });
-    }
-
-    function read() {
-      $.get(`${URL}?action=read&table=${TABLE}`, function (data) {
-        let html = "<tr><th>id</th><th>name</th><th>out</th><th>who</th><th>time</th></tr>";
-        data.forEach(row => {
-          html += `<tr>
-                    <td>${row.id}</td>
-                    <td>${row.name}</td>
-                    <td>${row.out}</td>
-                    <td>${row.who}</td>
-                    <td>${row.time}</td>
-                   </tr>`;
-        });
-        $("#data").html(html);
-      });
-    }
-
-    $(document).ready(read);
   </script>
 </body>
 </html>
