@@ -1,41 +1,47 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from supabase import create_client
 from dotenv import load_dotenv
+import os, io, requests
+import psycopg2
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-import requests, os, io
 
 load_dotenv()
 app = Flask(__name__)
 CORS(app, origins="*")
 
 # 🔐 Config
-SUPABASE_URL = str(os.getenv("SUPABASE_URL"))
-SUPABASE_KEY = str(os.getenv("SUPABASE_KEY"))
-GOOGLE_CLIENT_ID = str(os.getenv("GOOGLE_CLIENT_ID"))
 SERVICE_ACCOUNT_FILE = "credentials.json"
-FOLDER_ID = "1I9o0mzb_BbX5kHNm5npao7e96bdj67q-"
+FOLDER_ID = "1I9o0mzb_BbX5kHNm5npao7e96bdj67q-"  # Replace this with your actual Drive folder ID
+GOOGLE_CLIENT_ID = str(os.getenv("GOOGLE_CLIENT_ID"))
+DATABASE_URL = str(os.getenv("DATABASE_URL"))  # From Supabase -> Settings -> Database -> Connection URI
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-TABLE = "things"
+# ⚙️ DB helper
+def run_sql(query, params=None):
+    with psycopg2.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            try:
+                return cur.fetchall()
+            except:
+                return []
 
-# 🧠 Supabase logic
-def create_thing(record):
-    clean = {k: v for k, v in record.items() if v not in [None, "", "null"]}
-    return supabase.table(TABLE).insert([clean]).execute().data
+# 🔄 SQL API endpoint
+@app.route("/query", methods=["POST"])
+def exec_query():
+    body = request.get_json()
+    sql = body.get("sql")
+    params = body.get("params", [])
+    if not sql:
+        return jsonify({ "error": "Missing SQL" }), 400
+    try:
+        result = run_sql(sql, params)
+        return jsonify({ "result": result })
+    except Exception as e:
+        return jsonify({ "error": str(e) }), 500
 
-def read_things():
-    return supabase.table(TABLE).select("*").execute().data
-
-def update_thing(id, column, value):
-    return supabase.table(TABLE).update({column: value}).eq("id", id).execute().data
-
-def delete_thing(id):
-    return supabase.table(TABLE).delete().eq("id", id).execute().data
-
-# 🔗 Google Drive uploader
+# 📁 Google Drive upload
 def create_drive_service():
     creds = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE,
@@ -49,59 +55,37 @@ def upload_image():
     if not file:
         return jsonify({ "error": "No file received" }), 400
 
-    service = create_drive_service()
+    drive = create_drive_service()
 
     media = MediaIoBaseUpload(io.BytesIO(file.read()), mimetype=file.mimetype)
     metadata = { "name": file.filename, "parents": [FOLDER_ID] }
-
-    uploaded = service.files().create(
+    uploaded = drive.files().create(
         body=metadata,
         media_body=media,
-        fields="id, name"
+        fields="id"
     ).execute()
 
     file_id = uploaded.get("id")
 
-    # 👁️ Make public
-    service.permissions().create(
+    # 🌍 Make file public
+    drive.permissions().create(
         fileId=file_id,
         body={"role": "reader", "type": "anyone"},
     ).execute()
 
-    # 🔄 Attempt to resolve final Googleusercontent URL
+    # 🔁 Try resolving to Googleusercontent URL
     redirect_url = f"https://drive.google.com/uc?export=view&id={file_id}"
     try:
-        resp = requests.get(redirect_url, allow_redirects=True, timeout=10)
-        content_url = resp.url if resp.ok else redirect_url
-    except Exception as e:
-        print("Redirect resolution failed:", e)
-        content_url = redirect_url
+        r = requests.get(redirect_url, allow_redirects=True, timeout=10)
+        final_url = r.url if r.ok else redirect_url
+    except:
+        final_url = redirect_url
 
-    return jsonify({
-        "file_id": file_id,
-        "url": content_url
-    })
-# 🧩 Supabase API Routes
+    return jsonify({ "file_id": file_id, "url": final_url })
+
 @app.route("/")
 def index():
     return render_template("index.html", GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID)
-
-@app.route("/create", methods=["POST"])
-def api_create():
-    return jsonify(create_thing(request.json))
-
-@app.route("/read", methods=["GET"])
-def api_read():
-    return jsonify(read_things())
-
-@app.route("/update", methods=["POST"])
-def api_update():
-    d = request.json
-    return jsonify(update_thing(d["id"], d["column"], d["value"]))
-
-@app.route("/delete", methods=["POST"])
-def api_delete():
-    return jsonify(delete_thing(request.json["id"]))
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,46 +1,26 @@
 const supa = "https://troop89qm.koyeb.app";
-const local = "http://127.0.0.1:5000/";
+const local = "http://127.0.0.1:5000";
 const API = local;
 
-// Supabase CRUD utilities
-function createRecord(data, onSuccess = () => {}, onError = () => {}) {
-  $.ajax({
-    url: `${API}/create`,
+// Run any SQL statement via your Flask backend
+function runSQL(sql, params = [], onSuccess = () => {}, onError = () => {}) {
+  fetch(`${API}/query`, {
     method: "POST",
-    contentType: "application/json",
-    data: JSON.stringify(data),
-    success: onSuccess,
-    error: onError
-  });
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sql, params })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      onSuccess(data.result);
+    })
+    .catch(err => {
+      console.error("❌ SQL Error:", err);
+      onError(err);
+    });
 }
 
-function readRecords(onSuccess, onError = () => {}) {
-  $.get(`${API}/read`, onSuccess).fail(onError);
-}
-
-function updateRecord(id, column, value, onSuccess = () => {}, onError = () => {}) {
-  $.ajax({
-    url: `${API}/update`,
-    method: "POST",
-    contentType: "application/json",
-    data: JSON.stringify({ id, column, value }),
-    success: onSuccess,
-    error: onError
-  });
-}
-
-function deleteRecord(id, onSuccess = () => {}, onError = () => {}) {
-  $.ajax({
-    url: `${API}/delete`,
-    method: "POST",
-    contentType: "application/json",
-    data: JSON.stringify({ id }),
-    success: onSuccess,
-    error: onError
-  });
-}
-
-// Upload image via Flask (no Google login required)
+// Upload image via Google Drive → returns URL
 function uploadImage(inp, onSuccess = () => {}, onError = () => {}) {
   const fileInput = document.getElementById(inp);
   const file = fileInput?.files?.[0];
@@ -55,6 +35,7 @@ function uploadImage(inp, onSuccess = () => {}, onError = () => {}) {
   })
     .then(res => res.json())
     .then(data => {
+      if (data.error) throw new Error(data.error);
       console.log("✅ Uploaded:", data);
       onSuccess(data);
     })
@@ -63,4 +44,14 @@ function uploadImage(inp, onSuccess = () => {}, onError = () => {}) {
       alert("Upload failed. Check console.");
       onError(err);
     });
+}
+
+// 🔐 Handle Google Sign-In callback
+function onGoogleLogin(response) {
+  const credential = response.credential;
+  console.log("🔑 Google Credential:", credential);
+
+  // Send token to backend or decode for user info:
+  const payload = JSON.parse(atob(credential.split(".")[1]));
+  console.log("👤 User Info:", payload);
 }
