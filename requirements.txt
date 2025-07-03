@@ -1,9 +1,7 @@
-Flask
+flask
 flask-cors
 python-dotenv
+pg8000
 google-api-python-client
 google-auth
-google-auth-httplib2
-google-auth-oauthlib
 gunicorn
-psycopg2-binary
