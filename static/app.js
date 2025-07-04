@@ -1,6 +1,6 @@
 const supa = "https://troop89qm.koyeb.app";
 const local = "http://127.0.0.1:5000";
-const API = local;
+const API = supa;
 function execute(sql, params = []) {
   return fetch(`${API}/raw-sql`, {
     method: "POST",
