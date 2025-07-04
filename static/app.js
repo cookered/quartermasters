@@ -2,8 +2,8 @@ const supa = "https://troop89qm.koyeb.app";
 const local = "http://127.0.0.1:5000";
 const API = supa;
 // 🧠 Run raw SQL via Flask (pg8000-powered)
-function execute(sql, params = [], onSuccess = () => {}, onError = () => {}) {
-  fetch(`${API}/raw-sql`, {
+function execute(sql, params = []) {
+  return fetch(`${API}/raw-sql`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sql, params })
@@ -12,11 +12,11 @@ function execute(sql, params = [], onSuccess = () => {}, onError = () => {}) {
     .then(data => {
       if (data.error) throw new Error(data.error);
       console.log("✅ SQL result:", data.result);
-      onSuccess(data.result);
+      return data.result;
     })
     .catch(err => {
       console.error("❌ SQL error:", err);
-      onError(err);
+      return null;
     });
 }
 
@@ -44,13 +44,4 @@ function uploadImage(inputId, onSuccess = () => {}, onError = () => {}) {
       alert("Upload failed. See console.");
       onError(err);
     });
-}
-
-// 🔐 Handle Google Sign-In callback
-function onGoogleLogin(response) {
-  const credential = response.credential;
-  const payload = JSON.parse(atob(credential.split(".")[1]));
-  console.log("👤 Google user:", payload);
-
-  // Optional: send token to backend for auth if needed
 }

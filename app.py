@@ -32,16 +32,21 @@ def parse_db_url(url):
         "database": match.group(5)
     }
 
-# ⚙️ Run SQL with safe parameter binding
+# ⚙️ Run SQL with safe parameter binding and dict-style rows
 def run_sql(query, params=None):
     cfg = parse_db_url(DATABASE_URL)
     conn = pg8000.dbapi.connect(**cfg)
     cursor = conn.cursor()
     cursor.execute(query, params or [])
+
     try:
-        result = cursor.fetchall()
+        # ⛏️ Extract rows as dictionaries
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        result = [dict(zip(columns, row)) for row in rows]
     except pg8000.dbapi.ProgrammingError:
         result = []
+
     conn.commit()
     cursor.close()
     conn.close()
