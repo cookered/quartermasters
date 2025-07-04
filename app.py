@@ -9,7 +9,7 @@ from googleapiclient.http import MediaIoBaseUpload
 
 # 🔐 Load .env values manually and override OS environment
 config = dotenv_values(".env")
-os.environ["DATABASE_URL"] = config.get("DATABASE_URL", "")
+os.environ["DATABASE_URL"] = config.get("DATABASE_URL", "") #type: ignore
 app = Flask(__name__)
 CORS(app, origins="*")
 
@@ -18,7 +18,6 @@ SERVICE_ACCOUNT_FILE = "credentials.json"
 FOLDER_ID = "1I9o0mzb_BbX5kHNm5npao7e96bdj67q-"
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 DATABASE_URL = os.getenv("DATABASE_URL")
-
 # 🔍 Parse DATABASE_URL for pg8000.dbapi
 def parse_db_url(url):
     match = re.match(r"postgresql://(.*?):(.*?)@(.*?):(\d+)/(.*)", url)
@@ -31,27 +30,23 @@ def parse_db_url(url):
         "port": int(match.group(4)),
         "database": match.group(5)
     }
-
 # ⚙️ Run SQL with safe parameter binding and dict-style rows
 def run_sql(query, params=None):
     cfg = parse_db_url(DATABASE_URL)
     conn = pg8000.dbapi.connect(**cfg)
     cursor = conn.cursor()
     cursor.execute(query, params or [])
-
     try:
         # ⛏️ Extract rows as dictionaries
         rows = cursor.fetchall()
-        columns = [desc[0] for desc in cursor.description]
+        columns = [desc[0] for desc in cursor.description] #type: ignore
         result = [dict(zip(columns, row)) for row in rows]
     except pg8000.dbapi.ProgrammingError:
         result = []
-
     conn.commit()
     cursor.close()
     conn.close()
     return result
-
 # 🔁 Raw SQL route
 @app.route("/raw-sql", methods=["POST"])
 def raw_sql():
