@@ -44,40 +44,56 @@ function uploadImage(inputId, onSuccess = () => {}, onError = () => {}) {
 }
 function scan(onResult) {
   const html5QrCode = new Html5Qrcode("qr-reader");
-  const config = { fps: 10, qrbox: 250 };
+  const config = {
+    fps: 10,
+    qrbox: { width: 250, height: 250 },
+    aspectRatio: 1.0
+  };
+
   $("#qr-cont").show();
   $("#qr-reader").show();
   $("#overlay").show();
+
   Html5Qrcode.getCameras().then(cameras => {
-    if (cameras && cameras.length) {
-      html5QrCode.start(
-        cameras[0].id,
-        config,
-        (decodedText, decodedResult) => {
-          console.log(`✅ QR Code detected: ${decodedText}`, decodedResult);
-          html5QrCode.stop().then(() => {
-            $("#qr-reader").hide();
-            $("#qr-cont").hide();
-            $("#overlay").hide();
-            onResult(decodedText);
-          }).catch(err => {
-            console.error("Failed to stop scanner:", err);
-          });
-        },
-        (errorMessage) => {
-          if (
-            typeof errorMessage === "string" &&
-            !errorMessage.includes("No MultiFormat Readers")
-          ) {
-            console.warn("QR Code scan error:", errorMessage);
-          }
-        }
-      );
-    } else {
+    if (!cameras || cameras.length === 0) {
       alert("No cameras found");
+      return;
     }
+
+    // Try to select a rear-facing camera on mobile
+    let selectedCamera = cameras[0];
+    for (const cam of cameras) {
+      if (/back|rear|environment/i.test(cam.label)) {
+        selectedCamera = cam;
+        break;
+      }
+    }
+
+    html5QrCode.start(
+      selectedCamera.id,
+      config,
+      (decodedText, decodedResult) => {
+        console.log(`✅ QR Code detected: ${decodedText}`, decodedResult);
+        html5QrCode.stop().then(() => {
+          $("#qr-reader").hide();
+          $("#qr-cont").hide();
+          $("#overlay").hide();
+          onResult(decodedText);
+        }).catch(err => {
+          console.error("Failed to stop scanner:", err);
+        });
+      },
+      errorMessage => {
+        if (
+          typeof errorMessage === "string" &&
+          !errorMessage.includes("No MultiFormat Readers")
+        ) {
+          console.warn("QR scan error:", errorMessage);
+        }
+      }
+    );
   }).catch(err => {
-    console.warn("Camera error:", err);
-    alert("Failed to scan QR code. Please check your camera permissions or try a different browser.");
+    console.error("Camera access error:", err);
+    alert("Unable to access camera. Please check permissions.");
   });
 }
