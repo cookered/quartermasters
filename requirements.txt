@@ -1,7 +1,0 @@
-flask
-flask-cors
-python-dotenv
-pg8000
-google-api-python-client
-google-auth
-gunicorn
