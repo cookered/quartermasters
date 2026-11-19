@@ -1,27 +1,179 @@
 <html>
     <head>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-B/GM4XqrwHnWXNOWMbloTmrYXZg10cakYGmpfsR/bbzQ6JAJI4ihuyADKLnBgrCe" crossorigin="anonymous">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
-        <dialog class="dialog dialog-slide-down" id="slideDownDialog">
+        <dialog class="dialog" data-bs-backdrop="static" id="scan">
             <div class="dialog-header">
-                <h1 class="dialog-title">PLEASE SIGN IN</h1>
+                <h1 class="dialog-title fs-3xl" id="check-item-title"></h1>
+                <button type="button" class="btn-close" data-bs-dismiss="dialog" aria-label="Close"></button>
             </div>
-            <div class="dialog-body">
-                <div id="g_id_onload"
-                    data-client_id="225463699824-sjfadl4s88pamvc29qr1ubandd6mp1h9.apps.googleusercontent.com"
-                    data-callback="onGoogleLogin"
-                    data-auto_prompt="false"></div>
-                <div class="g_id_signin" data-type="standard"></div>
+            <div class="dialog-body text-center">
+                <p>SCAN QR CODE OF AN ITEM</p>
+                <div id="qr-cont">
+                    <div id="qr-reader"></div>
+                </div>
+                <div class="d-flex align-items-center my-3">
+                <hr class="flex-grow-1 m-0">
+                <span class="px-3 text-body-secondary small">OR</span>
+                <hr class="flex-grow-1 m-0">
+                </div>
+                <p>ENTER ITEM ID</p>
+                <div class="otp d-flex justify-content-center" data-bs-otp>
+                    <input type="text" class="otp-input" maxlength="4" aria-label="Item ID">
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button type="button" class="btn-solid" data-bs-dismiss="dialog">CANCEL</button>
             </div>
         </dialog>
+        <dialog class="dialog" data-bs-backdrop="static" id="signin">
+            <div class="dialog-header">
+                <h1 class="dialog-title fs-3xl">PLEASE SIGN IN</h1>
+            </div>
+            <div class="dialog-body text-center">
+                <button type="button" onclick="signIn()">SIGN IN WITH GOOGLE</button>
+            </div>
+        </dialog>
+        <header class="py-4 mb-4 border-bottom text-center">
+        <div class="container">
+            <h1 class="h3 mb-0">Troop 89 Quartermasters Dashboard</h1>
+        </div>
+        </header>
+        <div class="d-grid gap-2 md:d-block">
+        <button class="btn-solid" type="button" onclick="scan('CHECKOUT ITEM', function(thing){})">CHECKOUT ITEM</button>
+        </div>
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
         <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-1a/pXj49ZQ1aHEmrJ+gMw1otqoVsYwlEnlD8mIfY2TV03r20Y0CN7uqx1tQogjPL" crossorigin="anonymous"></script>
-        <script src="https://accounts.google.com/gsi/client" async defer></script>
-        <script>
-            window.onload = () => {
-                $("#slideDownDialog")[0].showModal();
+        <script src="https://unpkg.com/html5-qrcode"></script>
+        <script type="module">
+            import { Dialog } from 'https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js';
+            $.fn.bsDialog = function (action, options) {
+                return this.each(function () {
+                    const instance = Dialog.getOrCreateInstance(this, options);
+                    if (typeof action === 'string') {
+                        instance[action]();
+                    }
+                });
             };
+        </script>
+        <script>
+            let accessToken;
+            let tokenClient;
+
+            function initializeOAuth() {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: "225463699824-sjfadl4s88pamvc29qr1ubandd6mp1h9.apps.googleusercontent.com",
+                    scope: "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email",
+                    callback: async response => {
+                        if (response.error) {
+                            console.error(response);
+                            return;
+                        }
+
+                        accessToken = response.access_token;
+
+                        try {
+                            const allowed = await runScript("checkAccess");
+                            console.log(allowed);
+                            if (allowed) {
+                                console.log("Access granted");
+                                $("#signin").bsDialog("hide");
+                            } else {
+                                alert("Access denied; please contact the webmaster or quartermaster if you think this is a mistake");
+                            }
+                        } catch (error) {
+                            console.error("Authentication error:", error);
+                            alert("Unable to verify access.");
+                        }
+                    }
+                });
+            }
+
+            function signIn() {
+                if (!google.accounts?.oauth2) {
+                    alert("Google sign-in is still loading. Please try again.");
+                    return;
+                }
+
+                if (!tokenClient) initializeOAuth();
+
+                tokenClient.requestAccessToken();
+            }
+
+            async function runScript(functionName, parameters = []) {
+                const response = await fetch(
+                    "https://script.googleapis.com/v1/scripts/AKfycbz3Q5lLyJHN1Tov3j3IF8aToklD4xlzrwW28md90-K6SSpXqi5Bq1oZtaPd6h-5P5tQ:run",
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            function: functionName,
+                            parameters: parameters
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    throw new Error(JSON.stringify(data.error));
+                }
+
+                return data.response?.result;
+            }
+        </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                document.getElementById("signin").showModal();
+            });
+            var html5QrCode;
+            function scan(titlee, onResult) {
+                $("#check-item-title").text(titlee)
+                html5QrCode = new Html5Qrcode("qr-reader");
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                $('#scan').bsDialog('show');
+                document.getElementById('scan').addEventListener('close', () => {
+                    if (html5QrCode && html5QrCode.isScanning) {
+                        html5QrCode.stop().catch(console.error);
+                        $("#check-item-title").text("")
+                    }
+                });
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText, decodedResult) => {
+                        console.log("QR Code detected:", decodedText, decodedResult);
+
+                        html5QrCode.stop().then(() => {
+                            $('#scan').bsDialog('hide');
+                            onResult(decodedText);
+                        }).catch(err => {
+                            console.error("Failed to stop scanner:", err);
+                        });
+                    },
+                    errorMessage => {
+                        if (typeof errorMessage === "string" &&
+                            !errorMessage.includes("No MultiFormat Readers") && !errorMessage.includes("No barcode or QR code detected")) {
+                            console.warn("QR scan error:", errorMessage);
+                        }
+                    }
+                ).catch(err => {
+                    console.error("Camera access error:", err);
+                    alert("Unable to access camera. Please check permissions.");
+                    $('#scan').bsDialog('hide');
+                });
+            }
         </script>
     </body>
 </html>
