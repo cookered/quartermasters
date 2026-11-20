@@ -33,8 +33,8 @@
 
                         <p>ENTER ITEM ID</p>
                         <div class="d-flex gap-2">
-                            <div class="otp d-flex justify-content-center flex-grow-1" data-bs-otp>
-                                <input type="text" class="otp-input" id="manual-id" maxlength="4" aria-label="Item ID">
+                            <div class="otp d-flex justify-content-center flex-grow-1"  id="manual-id" data-bs-otp>
+                                <input type="text" class="otp-input" maxlength="4" aria-label="Item ID">
                             </div>
                         </div>
 
@@ -66,7 +66,6 @@
             </div>
 
             <div class="dialog-footer">
-                <span class="me-auto text-body-secondary" id="selected-count">0 items selected</span>
                 <button type="button" class="btn-solid" data-bs-dismiss="dialog">CANCEL</button>
                 <button type="button" class="btn-solid" onclick="continueCheckout()">CONTINUE</button>
             </div>
@@ -90,23 +89,43 @@
         </div>
         <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
-        <script type="module" src="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-1a/pXj49ZQ1aHEmrJ+gMw1otqoVsYwlEnlD8mIfY2TV03r20Y0CN7uqx1tQogjPL" crossorigin="anonymous"></script>
         <script src="https://unpkg.com/html5-qrcode"></script>
         <script type="module">
-            import { Dialog } from 'https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js';
-            $.fn.bsDialog = function (action, options) {
-                return this.each(function () {
-                    const instance = Dialog.getOrCreateInstance(this, options);
-                    if (typeof action === 'string') {
-                        instance[action]();
-                    }
-                });
-            };
+            import * as bootstrap from "https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js";
+            window.bootstrap = bootstrap;
+            Object.assign(window, bootstrap);
+            window.bootstrapReady = true;
         </script>
+        </script>        
         <script>
+            var otpInput
+            async function init() {
+                while (!window.bootstrapReady) {
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+                const Dialog = window.bootstrap.Dialog;
+                $.fn.bsDialog = function (action, options) {
+                    return this.each(function () {
+                        const instance = Dialog.getOrCreateInstance(this, options);
+                        if (typeof action === 'string') {
+                            instance[action]();
+                        }
+                    });
+                };
+                const otpElement = document.querySelector("[data-bs-otp]");
+                otpInput = window.bootstrap.OtpInput.getOrCreateInstance(otpElement);
+                $.fn.bsDialog = function (action, options) {
+                    return this.each(function () {
+                        const instance = Dialog.getOrCreateInstance(this, options);
+                        if (typeof action === 'string') {
+                            instance[action]();
+                        }
+                    });
+                };
+            }
+            init();
             let accessToken;
             let tokenClient;
-
             function initializeOAuth() {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: "225463699824-sjfadl4s88pamvc29qr1ubandd6mp1h9.apps.googleusercontent.com",
@@ -136,7 +155,6 @@
                     }
                 });
             }
-
             function signIn() {
                 if (!google.accounts?.oauth2) {
                     alert("Google sign-in is still loading. Please try again.");
@@ -145,9 +163,8 @@
 
                 if (!tokenClient) initializeOAuth();
 
-                tokenClient.requestAccessToken();
+                tokenClient.requestAccessToken({prompt: ""});
             }
-
             async function runScript(functionName, parameters = []) {
                 const response = await fetch(
                     "https://script.googleapis.com/v1/scripts/AKfycbz3Q5lLyJHN1Tov3j3IF8aToklD4xlzrwW28md90-K6SSpXqi5Bq1oZtaPd6h-5P5tQ:run",
@@ -173,19 +190,20 @@
 
                 return data.response?.result;
             }
-        </script>
-        <script>
+
             mode = "";
-            dta = []
+            dta = [];
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("signin").showModal();
-                document.addEventListener("input", function(event) {
-                    if (event.target.id !== "manual-id") return;
-                    console.log("Input detected:", event.target.value);
-                    if (event.target.value.length === 4) {
-                        addd(event.target.value);
-                        event.target.value = "";
+                document.querySelector("[data-bs-otp]").addEventListener("complete.bs.otpInput", function(event) {
+                    if (addd(event.value)){
+                        $("#manual-id").addClass("is-invalid");
+                    } else {
+                        otpInput.clear();
                     }
+                });
+                document.querySelector("[data-bs-otp]").addEventListener("input.bs.otpInput", function(event) {
+                    $("#manual-id").removeClass("is-invalid");
                 });
             });
             var html5QrCode;
@@ -199,7 +217,7 @@
                 card.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center">
                         <strong>${item.name}</strong>
-                        <span class="badge text-bg-success">${item.availible}</span>
+                        <span class="badge text-bg-success">${item.status}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <small class="text-body-secondary">ID: ${item.id}</small>
@@ -214,14 +232,15 @@
                     updateItemCount();
                 });
                 container.appendChild(card);
-                updateItemCount();
+                $("#item-count").text(container.children.length);
             }
-            async function addd(idd) {
+            function addd(idd) {
                 thing = dta.filter(row => String(row[0]).trim().padStart(4, "0") == String(idd).trim().padStart(4, "0"))
                 if (thing.length > 0){
-                    if (mode == "checkout") {
-                        addDetectedItem({id: thing[0], name: thing[1], location: thing[2], status: thing[3]});
-                    }
+                    addDetectedItem({id: thing[0][0], name: thing[0][1], location: thing[0][2], status: thing[0][3]});
+                    return false;
+                } else {
+                    return true;
                 }
             }
             async function scan(titlee, onResult) {
