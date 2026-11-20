@@ -2,6 +2,13 @@
     <head>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-B/GM4XqrwHnWXNOWMbloTmrYXZg10cakYGmpfsR/bbzQ6JAJI4ihuyADKLnBgrCe" crossorigin="anonymous">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            #qr-reader video {
+                max-width: 100%;
+                max-height: 350px;
+                object-fit: contain;
+            }
+        </style>
     </head>
     <body>
         <dialog class="dialog dialog-xl md-down:dialog-fullscreen" data-bs-backdrop="static" id="scan">
@@ -15,7 +22,7 @@
                     <div class="col-12 lg:col-7">
                         <p>SCAN QR CODES</p>
                         <div id="qr-cont">
-                            <div id="qr-reader"></div>
+                            <div id="qr-reader" class="max-h-50"></div>
                         </div>
 
                         <div class="d-flex align-items-center my-3">
@@ -79,7 +86,7 @@
         </div>
         </header>
         <div class="d-grid gap-2 md:d-block">
-        <button class="btn-solid" type="button" onclick="scan('CHECKOUT ITEM', function(thing){})">CHECKOUT ITEM</button>
+        <button class="btn-solid" type="button" onclick="mode='checkout'; scan('CHECKOUT ITEM', function(thing){});">CHECKOUT ITEM</button>
         </div>
         <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
@@ -103,7 +110,7 @@
             function initializeOAuth() {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: "225463699824-sjfadl4s88pamvc29qr1ubandd6mp1h9.apps.googleusercontent.com",
-                    scope: "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email",
+                    scope: "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email",
                     callback: async response => {
                         if (response.error) {
                             console.error(response);
@@ -161,17 +168,63 @@
 
                 if (!response.ok || data.error) {
                     throw new Error(JSON.stringify(data.error));
+                    alert(JSON.stringify(data.error));
                 }
 
                 return data.response?.result;
             }
         </script>
         <script>
+            mode = "";
+            dta = []
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("signin").showModal();
+                document.addEventListener("input", function(event) {
+                    if (event.target.id !== "manual-id") return;
+                    console.log("Input detected:", event.target.value);
+                    if (event.target.value.length === 4) {
+                        addd(event.target.value);
+                        event.target.value = "";
+                    }
+                });
             });
             var html5QrCode;
-            function scan(titlee, onResult) {
+            function addDetectedItem(item) {
+                const container = document.getElementById("detected-items");
+                if (container.querySelector(`[data-item-id="${item.id}"]`)) return;
+                container.querySelector("p")?.remove();
+                const card = document.createElement("div");
+                card.className = "card p-3";
+                card.dataset.itemId = item.id;
+                card.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>${item.name}</strong>
+                        <span class="badge text-bg-success">${item.availible}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-body-secondary">ID: ${item.id}</small>
+                        <button class="btn-close" type="button" aria-label="Remove"></button>
+                    </div>
+                `;
+                card.querySelector("button").addEventListener("click", () => {
+                    card.remove();
+                    if (!container.children.length) {
+                        container.innerHTML = '<p class="text-body-secondary text-center">No items added yet</p>';
+                    }
+                    updateItemCount();
+                });
+                container.appendChild(card);
+                updateItemCount();
+            }
+            async function addd(idd) {
+                thing = dta.filter(row => String(row[0]).trim().padStart(4, "0") == String(idd).trim().padStart(4, "0"))
+                if (thing.length > 0){
+                    if (mode == "checkout") {
+                        addDetectedItem({id: thing[0], name: thing[1], location: thing[2], status: thing[3]});
+                    }
+                }
+            }
+            async function scan(titlee, onResult) {
                 $("#check-item-title").text(titlee)
                 html5QrCode = new Html5Qrcode("qr-reader");
                 const config = {
@@ -186,12 +239,13 @@
                         $("#check-item-title").text("")
                     }
                 });
+                dta = await runScript("searchData");
                 html5QrCode.start(
                     { facingMode: "environment" },
                     config,
                     (decodedText, decodedResult) => {
                         console.log("QR Code detected:", decodedText, decodedResult);
-                        onResult(decodedText);
+                        addd(decodedText);
                     },
                     errorMessage => {
                         if (typeof errorMessage === "string" &&
@@ -205,11 +259,6 @@
                     $('#scan').bsDialog('hide');
                 });
             }
-            $("#manual-id").on("input", function(){
-                if ($("#manual-id").text().length() == 4){
-                    
-                }
-            });
         </script>
     </body>
 </html>
