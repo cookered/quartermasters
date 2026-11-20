@@ -258,7 +258,8 @@
                         html5QrCode.stop().catch(console.error);
                         $("#check-item-title").text("");
                         document.getElementById("detected-items").innerHTML = '<p class="text-body-secondary text-center">No items added yet</p>';
-                        $("#item-count").text(container.querySelectorAll("[data-item-id]").length);
+                        $("#item-count").text(document.getElementById("detected-items").querySelectorAll("[data-item-id]").length);
+                        otpInput.clear();
                     }
                 });
                 dta = await runScript("searchData");
