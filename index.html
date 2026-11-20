@@ -10,7 +10,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="dialog" aria-label="Close"></button>
             </div>
 
-            <div class="dialog-body">
+            <div class="dialog-body overflow-y-auto">
                 <div class="row g-4">
                     <div class="col-12 lg:col-7">
                         <p>SCAN QR CODES</p>
@@ -29,7 +29,6 @@
                             <div class="otp d-flex justify-content-center flex-grow-1" data-bs-otp>
                                 <input type="text" class="otp-input" id="manual-id" maxlength="4" aria-label="Item ID">
                             </div>
-                            <button type="button" class="btn-solid" onclick="addManualItem()">ADD</button>
                         </div>
 
                         <div class="d-flex align-items-center my-3">
@@ -70,7 +69,8 @@
                 <h1 class="dialog-title fs-3xl">PLEASE SIGN IN</h1>
             </div>
             <div class="dialog-body text-center">
-                <button type="button" onclick="signIn()">SIGN IN WITH GOOGLE</button>
+                <button type="button" class="btn" onclick="signIn()">SIGN IN WITH GOOGLE</button>
+                <p class="fg-success invisible" id="sign-in-verif">SIGNING IN...</p>
             </div>
         </dialog>
         <header class="py-4 mb-4 border-bottom text-center">
@@ -113,6 +113,7 @@
                         accessToken = response.access_token;
 
                         try {
+                            $("#sign-in-verif").removeClass("invisible");
                             const allowed = await runScript("checkAccess");
                             console.log(allowed);
                             if (allowed) {
@@ -204,6 +205,11 @@
                     $('#scan').bsDialog('hide');
                 });
             }
+            $("#manual-id").on("input", function(){
+                if ($("#manual-id").text().length() == 4){
+                    
+                }
+            });
         </script>
     </body>
 </html>
