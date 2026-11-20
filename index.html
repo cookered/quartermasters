@@ -16,8 +16,10 @@
                 <h1 class="dialog-title fs-3xl" id="check-item-title"></h1>
                 <button type="button" class="btn-close" data-bs-dismiss="dialog" aria-label="Close"></button>
             </div>
-
-            <div class="dialog-body overflow-y-auto">
+            <div class="dialog-body overflow-y-auto" id="loadingg">
+                <p>LOADING...</p>
+            </div>
+            <div class="dialog-body overflow-y-auto d-none" id="checkContent">
                 <div class="row g-4">
                     <div class="col-12 lg:col-7">
                         <p>SCAN QR CODES</p>
@@ -47,9 +49,8 @@
                         <p>SEARCH ITEMS</p>
                         <div class="d-flex gap-2">
                             <select class="form-select flex-grow-1" id="item-search">
-                                <option value="">Select an item...</option>
                             </select>
-                            <button type="button" class="btn-solid" onclick="addSelectedItem()">ADD</button>
+                            <button type="button" class="btn-solid" onclick="addd($('#item-search').val())">ADD</button>
                         </div>
                     </div>
 
@@ -229,10 +230,10 @@
                     if (!container.children.length) {
                         container.innerHTML = '<p class="text-body-secondary text-center">No items added yet</p>';
                     }
-                    updateItemCount();
+                    $("#item-count").text(container.querySelectorAll("[data-item-id]").length);
                 });
                 container.appendChild(card);
-                $("#item-count").text(container.children.length);
+                $("#item-count").text(container.querySelectorAll("[data-item-id]").length);
             }
             function addd(idd) {
                 thing = dta.filter(row => String(row[0]).trim().padStart(4, "0") == String(idd).trim().padStart(4, "0"))
@@ -255,10 +256,20 @@
                 document.getElementById('scan').addEventListener('close', () => {
                     if (html5QrCode && html5QrCode.isScanning) {
                         html5QrCode.stop().catch(console.error);
-                        $("#check-item-title").text("")
+                        $("#check-item-title").text("");
+                        document.getElementById("detected-items").innerHTML = '<p class="text-body-secondary text-center">No items added yet</p>';
+                        $("#item-count").text(container.querySelectorAll("[data-item-id]").length);
                     }
                 });
                 dta = await runScript("searchData");
+                $("#checkContent").removeClass("d-none");
+                $("#loadingg").addClass("d-none")
+                if (dta.length == 0){
+                    $("#item-search").append($("<option>").val("").text("NO ITEMS IN DATABASE"))
+                }
+                for (coo of dta) {
+                    $("#item-search").append($("<option>").val(coo[0]).text(coo[1]));
+                }
                 html5QrCode.start(
                     { facingMode: "environment" },
                     config,
