@@ -2,6 +2,8 @@
     <head>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-B/GM4XqrwHnWXNOWMbloTmrYXZg10cakYGmpfsR/bbzQ6JAJI4ihuyADKLnBgrCe" crossorigin="anonymous">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.2/font/bootstrap-icons.min.css">
+        <link rel="icon" type="image/png" href="favicon.ico">
         <style>
             #qr-reader video {
                 max-width: 100%;
@@ -11,6 +13,7 @@
         </style>
     </head>
     <body>
+        <div id="liveAlertPlaceholder" style="z-index: 2;"></div>
         <dialog class="dialog dialog-xl md-down:dialog-fullscreen" data-bs-backdrop="static" id="scan">
             <div class="dialog-header">
                 <h1 class="dialog-title fs-3xl" id="check-item-title"></h1>
@@ -68,7 +71,7 @@
 
             <div class="dialog-footer">
                 <button type="button" class="btn-solid" data-bs-dismiss="dialog">CANCEL</button>
-                <button type="button" class="btn-solid" onclick="continueCheckout()">CONTINUE</button>
+                <button type="button" class="btn-solid" onclick="checkout()">CONTINUE</button>
             </div>
         </dialog>
         <dialog class="dialog" data-bs-backdrop="static" id="signin">
@@ -115,14 +118,6 @@
                 };
                 const otpElement = document.querySelector("[data-bs-otp]");
                 otpInput = window.bootstrap.OtpInput.getOrCreateInstance(otpElement);
-                $.fn.bsDialog = function (action, options) {
-                    return this.each(function () {
-                        const instance = Dialog.getOrCreateInstance(this, options);
-                        if (typeof action === 'string') {
-                            instance[action]();
-                        }
-                    });
-                };
             }
             init();
             let accessToken;
@@ -142,9 +137,7 @@
                         try {
                             $("#sign-in-verif").removeClass("invisible");
                             const allowed = await runScript("checkAccess");
-                            console.log(allowed);
                             if (allowed) {
-                                console.log("Access granted");
                                 $("#signin").bsDialog("hide");
                             } else {
                                 alert("Access denied; please contact the webmaster or quartermaster if you think this is a mistake");
@@ -185,15 +178,17 @@
                 const data = await response.json();
 
                 if (!response.ok || data.error) {
-                    throw new Error(JSON.stringify(data.error));
-                    alert(JSON.stringify(data.error));
+                    console.error(JSON.stringify(data.error));
+                    alert("ERROR: " + JSON.stringify(data.error.message));
+                    return "THERE IS AN ERROR";
                 }
 
                 return data.response?.result;
             }
 
-            mode = "";
-            dta = [];
+            let mode = "";
+            let dta = [];
+            let appnd = [];
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("signin").showModal();
                 document.querySelector("[data-bs-otp]").addEventListener("complete.bs.otpInput", function(event) {
@@ -207,6 +202,22 @@
                     $("#manual-id").removeClass("is-invalid");
                 });
             });
+            const alertPlaceholder = document.getElementById('liveAlertPlaceholder')
+            const appendAlert = (message, type, time=0) => {
+            const wrapper = document.createElement('div')
+            wrapper.innerHTML = [
+                `<div class="alert theme-${type}" role="alert">`,
+                `   <p>${message}</p>`,
+                '   <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>',
+                '</div>'
+            ].join('')
+            alertPlaceholder.append(wrapper)
+            if (time > 0){
+                setTimeout(() => {
+                    wrapper.remove();
+                }, time);
+            }
+            }
             var html5QrCode;
             function addDetectedItem(item) {
                 const container = document.getElementById("detected-items");
@@ -222,7 +233,9 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <small class="text-body-secondary">ID: ${item.id}</small>
-                        <button class="btn-close" type="button" aria-label="Remove"></button>
+                        <button type="button" class="btn-outline theme-danger" aria-label="Delete">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>
                     </div>
                 `;
                 card.querySelector("button").addEventListener("click", () => {
@@ -239,9 +252,37 @@
                 thing = dta.filter(row => String(row[0]).trim().padStart(4, "0") == String(idd).trim().padStart(4, "0"))
                 if (thing.length > 0){
                     addDetectedItem({id: thing[0][0], name: thing[0][1], location: thing[0][2], status: thing[0][3]});
+                    appnd.push(thing[0]);
                     return false;
                 } else {
                     return true;
+                }
+            }
+            function closeModal(){
+                html5QrCode.stop().catch(console.error);
+                $("#check-item-title").text("");
+                document.getElementById("detected-items").innerHTML = '<p class="text-body-secondary text-center">No items added yet</p>';
+                $("#item-count").text(document.getElementById("detected-items").querySelectorAll("[data-item-id]").length);
+                otpInput.clear();
+                $("#item-search").empty();
+                $("#loadingg").removeClass("d-none");
+                $("#checkContent").addClass("d-none");
+                appnd.length = 0;
+            }
+            async function checkout() {
+                if (confirm(`PROCEED WITH ${mode.toUpperCase()}?`)) {
+                    $("#loadingg").removeClass("d-none");
+                    $("#checkContent").addClass("d-none");
+                    const thi = await runScript('checkout', [appnd]);
+                    if (thi == "THERE IS AN ERROR"){
+                        $("#checkContent").removeClass("d-none");
+                        $("#loadingg").addClass("d-none");
+                        appendAlert("THERE WAS AN ERROR...", "danger", 3500);
+                        return;
+                    }
+                    appendAlert("ITEM(S) ADDED SUCCESSFULLY", "success", 3500);
+                    $('#scan').bsDialog('hide');
+                    closeModal();
                 }
             }
             async function scan(titlee, onResult) {
@@ -255,16 +296,12 @@
                 $('#scan').bsDialog('show');
                 document.getElementById('scan').addEventListener('close', () => {
                     if (html5QrCode && html5QrCode.isScanning) {
-                        html5QrCode.stop().catch(console.error);
-                        $("#check-item-title").text("");
-                        document.getElementById("detected-items").innerHTML = '<p class="text-body-secondary text-center">No items added yet</p>';
-                        $("#item-count").text(document.getElementById("detected-items").querySelectorAll("[data-item-id]").length);
-                        otpInput.clear();
+                        closeModal();
                     }
                 });
                 dta = await runScript("searchData");
                 $("#checkContent").removeClass("d-none");
-                $("#loadingg").addClass("d-none")
+                $("#loadingg").addClass("d-none");
                 if (dta.length == 0){
                     $("#item-search").append($("<option>").val("").text("NO ITEMS IN DATABASE"))
                 }
