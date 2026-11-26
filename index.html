@@ -30,7 +30,7 @@
                             <div id="qr-reader" class="max-h-50"></div>
                         </div>
 
-                        <div class="d-flex align-items-center my-3">
+                        <div class="d-flex align-items-center my-3">                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
                             <hr class="flex-grow-1 m-0">
                             <span class="px-3 text-body-secondary small">OR</span>
                             <hr class="flex-grow-1 m-0">
@@ -71,7 +71,7 @@
 
             <div class="dialog-footer">
                 <button type="button" class="btn-solid" data-bs-dismiss="dialog">CANCEL</button>
-                <button type="button" class="btn-solid" onclick="checkout()">CONTINUE</button>
+                <button type="button" class="btn-solid" id="scan-cont">CONTINUE</button>
             </div>
         </dialog>
         <dialog class="dialog" data-bs-backdrop="static" id="signin">
@@ -89,7 +89,8 @@
         </div>
         </header>
         <div class="d-grid gap-2 md:d-block">
-        <button class="btn-solid" type="button" onclick="mode='checkout'; scan('CHECKOUT ITEM', function(thing){});">CHECKOUT ITEM</button>
+        <button class="btn-solid" type="button" onclick="mode='checkout'; scan('CHECKOUT ITEM', checkout);">CHECKOUT ITEM</button>
+        <button class="btn-solid" type="button" onclick="mode='checkin'; scan('CHECK IN ITEM', checkin);">CHECK IN ITEM</button>
         </div>
         <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
@@ -270,7 +271,7 @@
                 appnd.length = 0;
             }
             async function checkout() {
-                if (confirm(`PROCEED WITH ${mode.toUpperCase()}?`)) {
+                if (confirm(`PROCEED WITH CHECKOUT?`)) {
                     $("#loadingg").removeClass("d-none");
                     $("#checkContent").addClass("d-none");
                     const thi = await runScript('checkout', [appnd]);
@@ -280,12 +281,43 @@
                         appendAlert("THERE WAS AN ERROR...", "danger", 3500);
                         return;
                     }
-                    appendAlert("ITEM(S) ADDED SUCCESSFULLY", "success", 3500);
+                    appendAlert("ITEM(S) CHECKED OUT SUCCESSFULLY", "success", 3500);
                     $('#scan').bsDialog('hide');
                     closeModal();
                 }
             }
-            async function scan(titlee, onResult) {
+            async function checkin() {
+                if (confirm(`PROCEED WITH CHECK IN?`)) {
+                    $("#loadingg").removeClass("d-none");
+                    $("#checkContent").addClass("d-none");
+                    const thi = await runScript('checkin', [appnd]);
+                    if (thi == "THERE IS AN ERROR"){
+                        $("#checkContent").removeClass("d-none");
+                        $("#loadingg").addClass("d-none");
+                        appendAlert("THERE WAS AN ERROR...", "danger", 3500);
+                        return;
+                    }
+                    appendAlert("ITEM(S) CHECKED IN SUCCESSFULLY", "success", 3500);
+                    $('#scan').bsDialog('hide');
+                    closeModal();
+                }
+            }
+            async function report(iddd) {
+                $("#loadingg").removeClass("d-none");
+                $("#checkContent").addClass("d-none");
+
+                const thi = await runScript('report', [iddd]);
+                if (thi == "THERE IS AN ERROR"){
+                    $("#checkContent").removeClass("d-none");
+                    $("#loadingg").addClass("d-none");
+                    appendAlert("THERE WAS AN ERROR...", "danger", 3500);
+                    return;
+                }
+                appendAlert("ITEM(S) CHECKED IN SUCCESSFULLY", "success", 3500);
+                $('#scan').bsDialog('hide');
+                closeModal();
+            }
+            async function scan(titlee, onResult, onlyone=false) {
                 $("#check-item-title").text(titlee)
                 html5QrCode = new Html5Qrcode("qr-reader");
                 const config = {
@@ -295,10 +327,12 @@
                 };
                 $('#scan').bsDialog('show');
                 document.getElementById('scan').addEventListener('close', () => {
+                    $('#scan-cont').off('click');
                     if (html5QrCode && html5QrCode.isScanning) {
                         closeModal();
                     }
                 });
+                $('#scan-cont').on('click', onResult);
                 dta = await runScript("searchData");
                 $("#checkContent").removeClass("d-none");
                 $("#loadingg").addClass("d-none");
@@ -312,8 +346,11 @@
                     { facingMode: "environment" },
                     config,
                     (decodedText, decodedResult) => {
-                        console.log("QR Code detected:", decodedText, decodedResult);
-                        addd(decodedText);
+                        if (!onlyone){
+                            addd(decodedText);
+                        } else {
+                            onResult(decodedText)
+                        }
                     },
                     errorMessage => {
                         if (typeof errorMessage === "string" &&
