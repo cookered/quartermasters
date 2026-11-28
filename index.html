@@ -1,6 +1,6 @@
 <html>
     <head>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-B/GM4XqrwHnWXNOWMbloTmrYXZg10cakYGmpfsR/bbzQ6JAJI4ihuyADKLnBgrCe" crossorigin="anonymous">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-MKn5NWVBEuQXJE7TSKSgPUmMiSCmVTfCsR+VSSeQpHnoyJQZZFn/kBn+Ht5jZDPQ" crossorigin="anonymous">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.2/font/bootstrap-icons.min.css">
         <link rel="icon" type="image/png" href="favicon.ico">
@@ -53,7 +53,7 @@
                         <div class="d-flex gap-2">
                             <select class="form-select flex-grow-1" id="item-search">
                             </select>
-                            <button type="button" class="btn-solid" onclick="addd($('#item-search').val())">ADD</button>
+                            <button type="button" class="btn-solid", id="se-btn">ADD</button>
                         </div>
                     </div>
 
@@ -83,20 +83,92 @@
                 <p class="fg-success invisible" id="sign-in-verif">SIGNING IN...</p>
             </div>
         </dialog>
+        <dialog class="dialog" data-bs-backdrop="static" id="report">
+            <div class="dialog-header">
+                <h1 class="dialog-title fs-3xl">REPORT ITEM CONDITION</h1>
+            </div>
+            <div class="dialog-body text-center">
+                <div class="form-field">
+                    <label for="report-input" class="form-label">PLEASE REPORT CONDITION:</label>
+                    <textarea class="form-control" id="report-input" rows="4"></textarea>
+                </div>
+                <p class="fg-success invisible" id="rpt">LOADING...</p>
+            </div>
+            <div class="dialog-footer">
+                <button type="button" class="btn-solid" data-bs-dismiss="dialog">CANCEL</button>
+                <button type="button" class="btn-solid" id="report-cont">CONTINUE</button>
+            </div>
+        </dialog>
+        <dialog class="dialog dialog-xl md-down:dialog-fullscreen" data-bs-backdrop="static" id="edit-dialog">
+            <div class="dialog-header">
+                <h1 class="dialog-title fs-3xl">EDIT DATABASE</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="dialog" aria-label="Close"></button>
+            </div>
+            <div class="dialog-body overflow-y-auto" id="loadingg-edit">
+                <p>LOADING...</p>
+            </div>
+            <div class="dialog-body overflow-y-auto d-none" id="checkContent-edit">
+                <div class="table-card table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th scope="col">ACTIONS</th>
+                                <th scope="col">ID</th>
+                                <th scope="col">NAME</th>
+                                <th scope="col">LOCATION</th>
+                                <th scope="col">STATUS</th>
+                                <th scope="col">CONDITION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="edit-table">
+                            <tr>
+                                <td class="align-middle">
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn-subtle theme-primary d-inline-flex align-items-center justify-content-center p-2 lh-1" aria-label="Edit row"><i class="bi bi-pencil"></i></button>
+                                        <button type="button" class="btn-subtle theme-danger d-inline-flex align-items-center justify-content-center p-2 lh-1" aria-label="Delete row"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                                <td class="align-middle"><div class="otp otp-connected" data-bs-otp><input type="text" class="otp-input" maxlength="4" aria-label="ID"></div></td>
+                                <td class="align-middle"><input class="form-control" value="wsg"></td>
+                                <td class="align-middle">
+                                    <div class="combobox" data-bs-toggle="combobox" data-bs-name="location"><input class="form-control combobox-input" placeholder="Choose a location..."></div>
+                                    <div class="menu" aria-label="Locations"><button class="menu-item selected" type="button" data-bs-value="FIREHOUSE" aria-selected="true">FIREHOUSE</button><button class="menu-item" type="button" data-bs-value="SHED">SHED</button></div>
+                                </td>
+                                <td class="align-middle"><select class="form-control"><option value="AVAILIBLE">AVAILIBLE</option><option value="UNAVAILIBLE">UNAVAILIBLE</option></select></td>
+                                <td class="align-middle"><textarea class="form-control">cookered</textarea></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="6" class="p-2">
+                                    <button type="button" class="btn-subtle w-100" aria-label="Add row"><i class="bi bi-plus-lg me-1"></i></button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button type="button" class="btn-solid" data-bs-dismiss="dialog">CANCEL</button>
+                <button type="button" class="btn-solid" id="edit-cont">CONTINUE</button>
+            </div>
+        </dialog>
         <header class="py-4 mb-4 border-bottom text-center">
         <div class="container">
             <h1 class="h3 mb-0">Troop 89 Quartermasters Dashboard</h1>
         </div>
         </header>
         <div class="d-grid gap-2 md:d-block">
-        <button class="btn-solid" type="button" onclick="mode='checkout'; scan('CHECKOUT ITEM', checkout);">CHECKOUT ITEM</button>
-        <button class="btn-solid" type="button" onclick="mode='checkin'; scan('CHECK IN ITEM', checkin);">CHECK IN ITEM</button>
+            <button class="btn-solid" type="button" onclick="mode='checkout'; scan('CHECKOUT ITEM', checkout);">CHECKOUT ITEM</button>
+            <button class="btn-solid" type="button" onclick="mode='checkin'; scan('CHECK IN ITEM', checkin);">CHECK IN ITEM</button>
+            <button class="btn-solid" type="button" onclick="mode='report'; scan('REPORT ITEM CONDITION', report, true);">REPORT ITEM CONDITION</button>
+            <button class="btn-solid" type="button" onclick="mode='edit'; edit();">EDIT DATABASE</button>
         </div>
         <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
         <script src="https://unpkg.com/html5-qrcode"></script>
         <script type="module">
-            import * as bootstrap from "https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.1/dist/js/bootstrap.bundle.min.js";
+            import * as bootstrap from "https://cdn.jsdelivr.net/npm/bootstrap@6.0.0-alpha.2/dist/js/bootstrap.bundle.min.js";
             window.bootstrap = bootstrap;
             Object.assign(window, bootstrap);
             window.bootstrapReady = true;
@@ -192,16 +264,6 @@
             let appnd = [];
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("signin").showModal();
-                document.querySelector("[data-bs-otp]").addEventListener("complete.bs.otpInput", function(event) {
-                    if (addd(event.value)){
-                        $("#manual-id").addClass("is-invalid");
-                    } else {
-                        otpInput.clear();
-                    }
-                });
-                document.querySelector("[data-bs-otp]").addEventListener("input.bs.otpInput", function(event) {
-                    $("#manual-id").removeClass("is-invalid");
-                });
             });
             const alertPlaceholder = document.getElementById('liveAlertPlaceholder')
             const appendAlert = (message, type, time=0) => {
@@ -228,15 +290,36 @@
                 card.className = "card p-3";
                 card.dataset.itemId = item.id;
                 card.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center">
-                        <strong>${item.name}</strong>
-                        <span class="badge text-bg-success">${item.status}</span>
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                    <strong>${item.name}</strong>
+                    <span class="badge text-bg-success flex-shrink-0">${item.status}</span>
                     </div>
+
+                    <!-- Clickable condition that expands/collapses -->
+                    <div class="mt-1">
+                    <div 
+                        class="fg-danger text-truncate" 
+                        role="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#condition-${item.id}" 
+                        aria-expanded="false"
+                        title="CLICK TO EXPAND"
+                    >
+                        ${item.condition}
+                    </div>
+                    
+                    <div class="collapse" id="condition-${item.id}">
+                        <div class="fg-danger small pt-1 border-top mt-1">
+                        ${item.condition}
+                        </div>
+                    </div>
+                    </div>
+
                     <div class="d-flex justify-content-between align-items-center mt-2">
-                        <small class="text-body-secondary">ID: ${item.id}</small>
-                        <button type="button" class="btn-outline theme-danger" aria-label="Delete">
+                    <small class="text-body-secondary">ID: ${item.id}</small>
+                    <button type="button" class="btn-outline theme-danger" aria-label="Delete">
                         <i class="bi bi-trash" aria-hidden="true"></i>
-                        </button>
+                    </button>
                     </div>
                 `;
                 card.querySelector("button").addEventListener("click", () => {
@@ -249,14 +332,19 @@
                 container.appendChild(card);
                 $("#item-count").text(container.querySelectorAll("[data-item-id]").length);
             }
-            function addd(idd) {
-                thing = dta.filter(row => String(row[0]).trim().padStart(4, "0") == String(idd).trim().padStart(4, "0"))
-                if (thing.length > 0){
-                    addDetectedItem({id: thing[0][0], name: thing[0][1], location: thing[0][2], status: thing[0][3]});
-                    appnd.push(thing[0]);
-                    return false;
+            function addd(idd, onlyone, onResult) {
+                if (!onlyone){
+                    thing = dta.filter(row => String(row[0]).trim().padStart(4, "0") == String(idd).trim().padStart(4, "0"))
+                    if (thing.length > 0){
+                        addDetectedItem({id: thing[0][0], name: thing[0][1], location: thing[0][2], status: thing[0][3], condition: thing[0][4]});
+                        appnd.push(thing[0]);
+                        return false;
+                    } else {
+                        return true;
+                    }
                 } else {
-                    return true;
+                    onResult(idd);
+                    return false;
                 }
             }
             function closeModal(){
@@ -281,8 +369,8 @@
                         appendAlert("THERE WAS AN ERROR...", "danger", 3500);
                         return;
                     }
-                    appendAlert("ITEM(S) CHECKED OUT SUCCESSFULLY", "success", 3500);
                     $('#scan').bsDialog('hide');
+                    appendAlert("ITEM(S) CHECKED OUT SUCCESSFULLY", "success", 3500);
                     closeModal();
                 }
             }
@@ -297,25 +385,58 @@
                         appendAlert("THERE WAS AN ERROR...", "danger", 3500);
                         return;
                     }
-                    appendAlert("ITEM(S) CHECKED IN SUCCESSFULLY", "success", 3500);
                     $('#scan').bsDialog('hide');
+                    appendAlert("ITEM(S) CHECKED IN SUCCESSFULLY", "success", 3500);
                     closeModal();
                 }
             }
             async function report(iddd) {
                 $("#loadingg").removeClass("d-none");
                 $("#checkContent").addClass("d-none");
-
-                const thi = await runScript('report', [iddd]);
-                if (thi == "THERE IS AN ERROR"){
-                    $("#checkContent").removeClass("d-none");
-                    $("#loadingg").addClass("d-none");
-                    appendAlert("THERE WAS AN ERROR...", "danger", 3500);
-                    return;
-                }
-                appendAlert("ITEM(S) CHECKED IN SUCCESSFULLY", "success", 3500);
                 $('#scan').bsDialog('hide');
+                $('#report').one('shown.bs.modal shown.bs.dialog', function() {
+                    $("#report-input").trigger("focus");
+                }).bsDialog('show');
                 closeModal();
+                $("#report-cont").on("click", async function(){
+                    $("#report-cont").off("click");
+                    $("#rpt").removeClass("invisible");
+                    const thi = await runScript('report', [iddd, $("#report-input").val()]);
+                    if (thi == "THERE IS AN ERROR"){
+                        appendAlert("THERE WAS AN ERROR...", "danger", 3500);
+                        return;
+                    }
+                    $("#report-input").val("");
+                    $("#report").bsDialog('hide');
+                    $("#rpt").addClass("invisible");
+                    appendAlert("ITEM CONDITION REPORTED SUCCESSFULLY", "success", 3500);
+                });
+            }
+            async function edit() {
+                $('#edit-dialog').bsDialog('show');
+                dta = await runScript("searchData");
+                $("#checkContent-edit").removeClass("d-none");
+                $("#loadingg-edit").addClass("d-none");
+                for (thing of dta) {
+                    $("#edit-table").empty();
+                    for (const thing of dta) {
+                        $("#edit-table").append(`
+                            <tr>
+                                <td class="align-middle">
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn-subtle theme-primary" aria-label="Edit row"><i class="bi bi-pencil"></i></button>
+                                        <button type="button" class="btn-subtle theme-danger" aria-label="Delete row"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                                <td class="align-middle">${thing[0]}</td>
+                                <td class="align-middle">${thing[1]}</td>
+                                <td class="align-middle">${thing[2]}</td>
+                                <td class="align-middle fg-${thing[3] == "AVAILIBLE" ? "success":"danger"}">${thing[3]}</td>
+                                <td class="align-middle fg-${thing[4] ? "danger":"success"}">${thing[4] ? thing[4]:"N/A"}</td>
+                            </tr>
+                        `);
+                    }
+                }
             }
             async function scan(titlee, onResult, onlyone=false) {
                 $("#check-item-title").text(titlee)
@@ -346,11 +467,7 @@
                     { facingMode: "environment" },
                     config,
                     (decodedText, decodedResult) => {
-                        if (!onlyone){
-                            addd(decodedText);
-                        } else {
-                            onResult(decodedText)
-                        }
+                        addd(decodedText, onlyone, onResult);
                     },
                     errorMessage => {
                         if (typeof errorMessage === "string" &&
@@ -362,6 +479,19 @@
                     console.error("Camera access error:", err);
                     alert("Unable to access camera. Please check permissions.");
                     $('#scan').bsDialog('hide');
+                });
+                document.querySelector("[data-bs-otp]").addEventListener("complete.bs.otpInput", function(event) {
+                    if (addd(event.value, onlyone, onResult)){
+                        $("#manual-id").addClass("is-invalid");
+                    } else {
+                        otpInput.clear();
+                    }
+                });
+                document.querySelector("[data-bs-otp]").addEventListener("input.bs.otpInput", function(event) {
+                    $("#manual-id").removeClass("is-invalid");
+                });
+                $("#se-btn").on("click", function(){
+                    addd($('#item-search').val(), onlyone, onResult);
                 });
             }
         </script>
